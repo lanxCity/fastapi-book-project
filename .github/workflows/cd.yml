@@ -43,4 +43,4 @@ jobs:
       - name: Start Zrok Tunnel
         run: |
           zrok enable "${{ secrets.ZROK_TOKEN }}"
-          zrok share http 8000
+          zrok share public http://localhost:8000/
