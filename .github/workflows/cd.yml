@@ -24,10 +24,10 @@ jobs:
 
       - name: Run FastAPI App
         run: |
-          nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
+          nohup uvicorn main:app --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &
+          sleep 5  # Give some time for the app to start
 
       - name: Install Zrok
-        - name: Install Zrok
         run: |
           wget https://github.com/openziti/zrok/releases/latest/download/zrok-linux-amd64
           chmod +x zrok-linux-amd64
@@ -37,6 +37,6 @@ jobs:
       - name: Start Zrok Tunnel
         run: |
           zrok enable --token ${{ secrets.ZROK_TOKEN }}
-          zrok share http 8000
+          zrok share http 8000 --public
         env:
           ZROK_TOKEN: ${{ secrets.ZROK_TOKEN }}
