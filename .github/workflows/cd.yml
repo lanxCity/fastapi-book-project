@@ -24,19 +24,25 @@ jobs:
 
       - name: Run FastAPI App
         run: |
-          nohup uvicorn main:app --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &
-          sleep 5  # Give some time for the app to start
+          nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
 
       - name: Install Zrok
         run: |
-          wget https://github.com/openziti/zrok/releases/latest/download/zrok-linux-amd64
-          chmod +x zrok-linux-amd64
-          sudo mv zrok-linux-amd64 /usr/local/bin/zrok
+          sudo apt-get update && sudo apt-get install -y jq
+          ZROK_VERSION=$(curl -sSf https://api.github.com/repos/openziti/zrok/releases/latest | jq -r '.tag_name')
+          case $(uname -m) in
+            x86_64) GOXARCH=amd64 ;;
+            aarch64|arm64) GOXARCH=arm64 ;;
+            arm*) GOXARCH=armv7 ;;
+            *) echo "ERROR: unknown arch '$(uname -m)'" >&2; exit 1 ;;
+          esac
+          curl -sSfL "https://github.com/openziti/zrok/releases/download/${ZROK_VERSION}/zrok_${ZROK_VERSION#v}_linux_${GOXARCH}.tar.gz" | tar -xz -f -
+          sudo install -o root -g root ./zrok /usr/local/bin/
           zrok version
 
       - name: Start Zrok Tunnel
         run: |
           zrok enable --token ${{ secrets.ZROK_TOKEN }}
-          zrok share http 8000 --public
+          zrok share http 8000
         env:
           ZROK_TOKEN: ${{ secrets.ZROK_TOKEN }}
