@@ -1,29 +1,37 @@
-name: CD Pipeline
+name: Deploy FastAPI App
 
 on:
   push:
     branches:
-      - main # Runs on every push to main
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set Up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: 3.12
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Deploy Application
+      - name: Run FastAPI App
         run: |
-          echo "Deploying the application..."
-          # Add deployment steps here (e.g., SSH into a server, restart services)
+          nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
+
+      - name: Install Zrok
+        run: |
+          curl -fsSL https://get.openziti.io/zrok | bash
+          sudo mv zrok /usr/local/bin/
+
+      - name: Start Zrok Tunnel
+        run: |
+          zrok enable --token DoqCtBqwExoZ
+          zrok share http 8000
