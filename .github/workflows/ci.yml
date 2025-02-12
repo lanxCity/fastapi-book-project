@@ -26,3 +26,5 @@ jobs:
       - name: Run Tests
         run: |
           pytest
+
+# This is a test update to trigger CI
