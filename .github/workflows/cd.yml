@@ -46,7 +46,7 @@ jobs:
       - name: Verify Deployment
         run: |
           echo "Checking if /stage2 endpoint is live..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://your-render-app.onrender.com/stage2)
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://https://fastapi-book-project-e8vc.onrender.com/stage2)
           if [ "$response" -ne 200 ]; then
             echo "Error: /stage2 is not available (status code: $response)"
             exit 1
