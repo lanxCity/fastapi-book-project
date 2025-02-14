@@ -44,3 +44,13 @@ jobs:
             fi
             sleep 10  # Wait for 10 seconds before checking again
           done
+
+      - name: Verify Deployment
+        run: |
+          echo "Checking if /stage2 endpoint is live..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://https://fastapi-book-project-e8vc.onrender.com/stage2)
+          if [ "$response" -ne 200 ]; then
+            echo "Error: /stage2 is not available (status code: $response)"
+            exit 1
+          fi
+          echo "Deployment successful! /stage2 is live."
