@@ -14,5 +14,41 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Trigger Render Deployment
+        id: trigger_deployment
         run: |
-          curl -X POST "https://api.render.com/deploy/${{ secrets.RENDER_SERVICE_ID }}?key=${{ secrets.RENDER_API_KEY }}"
+          response=$(curl -X POST "https://api.render.com/deploy/${{ secrets.RENDER_SERVICE_ID }}?key=${{ secrets.RENDER_API_KEY }}")
+          deployment_id=$(echo $response | jq -r '.id')
+          echo "deployment_id=$deployment_id" >> $GITHUB_ENV
+          echo "Deployment triggered with ID: $deployment_id"
+
+      - name: Wait for Deployment to Complete
+        run: |
+          deployment_id=${{ env.deployment_id }}
+          echo "Waiting for deployment $deployment_id to complete..."
+          while true; do
+            status_response=$(curl -X GET "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$deployment_id" \
+              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+              -H "Content-Type: application/json")
+            echo $status_response
+            status=$(echo $status_response | jq -r '.status')
+            echo "Current status: $status"
+            if [[ "$status" == "build_failed" || "$status" == "update_failed" || "$status" == "pre_deploy_failed" ]]; then
+              echo "Deployment failed with status: $status"
+              exit 1
+            fi
+            if [[ "$status" == "live" ]]; then
+              echo "Deployment completed with status: $status"
+              break
+            fi
+            sleep 10  # Wait for 10 seconds before checking again
+          done
+
+      - name: Verify Deployment
+        run: |
+          echo "Checking if /stage2 endpoint is live..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://your-render-app.onrender.com/stage2)
+          if [ "$response" -ne 200 ]; then
+            echo "Error: /stage2 is not available (status code: $response)"
+            exit 1
+          fi
+          echo "Deployment successful! /stage2 is live."
